@@ -7,15 +7,15 @@ class WebScraper:
         self.base_url = self.url.rsplit('/', 1)[0]
         self.data = dict()
 
-        self.getNumberOfPages()
+        self.getNextPage()
 
-    def getNumberOfPages(self):
+    def getNextPage(self):
         page = requests.get(self.url)
         soup = BeautifulSoup(page.content, "html.parser")
-        self.nPages = int(soup.find("a", {"class":"last"})['href'].split("/")[-2])
-        for i in range(1, self.nPages):
-            nextpage = self.url + "" + str(i) +"/"
-            print(nextpage)
+        try:
+            self.nextPage = urllib.parse.urljoin(self.url, soup.find("a", {"class":"next"})['href'])
+        except:
+            self.nextPage = None
 
     def scrapePage(self):
         """
@@ -28,22 +28,36 @@ class WebScraper:
         list = soup.find("div", {"class":"seznam"}).find_all("div", {"class":"oglas_container"})
 
         for i in list:
+            position = id = title = size = price = year = level = agency = link = type = None
             try:
                 position = i.find("meta", {"itemprop":"position"})['content']
                 id = int(i.find("a")['title'])
                 title = i.find("a").find("span", {"class":"title"}).text
                 size = float(i.find("span", {"class":"velikost"}).text.replace(" m2", "").replace(",","."))
-                price = float(i.find("span", {"class":"cena"}).text.replace(" €/mesec","").replace(".","").replace(",","."))
+                price = float(i.find("meta", {"itemprop":"price"})['content'])
                 year = i.find("span", {"class":"atribut leto"}).find("strong").text
                 level = i.find("span", {"class":"atribut"}).text.split(" ")[1].replace(",","") if len(i.find("span", {"class":"atribut"})['class']) == 1 else ""
-                agency = i.find("span", {"class":"agencija"}).text
-                link = urllib.parse.urljoin(self.base_url, i.find("a")['href'])              
+                agency = i.find("div", {"class":"prodajalec_o"})['title']
+                link = urllib.parse.urljoin(self.base_url, i.find("a")['href'])
+                type = i.find("span", {"class":"tipi"}).text
                 
-                if id not in self.data:
-                    self.data[id] = {"title":title, "size":size, "price":price, "year":year, "level":level, "agency":agency, "url":link}
-
             except:
                 pass
+
+            if id not in self.data:
+                self.data[id] = {"title":title, "type":type, "size":size, "price":price, "year":year, "level":level, "agency":agency, "url":link}
+
+    def scrapeAllPages(self):
+        while True:
+            if self.nextPage is not None:
+                self.scrapePage()
+                self.url = self.nextPage
+                self.getNextPage()
+                print(len(self.data))
+            else:
+                self.scrapePage()
+                print(len(self.data))
+                break
 
     def writeDataToJSON(self, filename):
         """
