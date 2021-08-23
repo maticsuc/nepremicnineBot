@@ -8,14 +8,34 @@ class WebScraper:
         self.data = dict()
 
         self.getNextPage()
+        self.getNappartments()
+
+    def getNappartments(self):
+        """
+        Returns (and sets) number of all found appartments.
+        """
+        page = requests.get(self.url)
+        soup = BeautifulSoup(page.content, "html.parser")
+
+        try:
+            self.nAppartments = int(soup.find("div", {"class":"oglasi_cnt"}).find("strong").text)
+        except:
+            self.nAppartments = None
+
+        return self.nAppartments
 
     def getNextPage(self):
+        """
+        Returns (and sets) the next page of current page. None if current page doesn't have the next page.
+        """
         page = requests.get(self.url)
         soup = BeautifulSoup(page.content, "html.parser")
         try:
             self.nextPage = urllib.parse.urljoin(self.url, soup.find("a", {"class":"next"})['href'])
         except:
             self.nextPage = None
+
+        return self.nextPage
 
     def scrapePage(self):
         """
@@ -44,26 +64,38 @@ class WebScraper:
             except:
                 pass
 
-            if id not in self.data:
+            if id not in self.data and id is not None:
                 self.data[id] = {"title":title, "type":type, "size":size, "price":price, "year":year, "level":level, "agency":agency, "url":link}
 
     def scrapeAllPages(self):
+        """
+        Scrapes all appartments on all next pages.
+        """
+        nPages = 0
         while True:
             if self.nextPage is not None:
                 self.scrapePage()
+                nPages += 1
                 self.url = self.nextPage
                 self.getNextPage()
-                print(len(self.data))
             else:
                 self.scrapePage()
-                print(len(self.data))
+                nPages += 1
                 break
+
+        return f"Scraped {nPages} pages, Total appartments: {len(self.data)}"
 
     def writeDataToJSON(self, filename):
         """
-        Writes data scraped from website to json file.
+        Writes data scraped from website to JSON file.
         """
         json_string = json.dumps(self.data, ensure_ascii=False, indent=4)
         f = open(filename, "w", encoding='utf-8')
         f.write(json_string)
         f.close()
+    
+    def readDataFromJSON(self, filename):
+        """
+        Reads data from JSON file.
+        """
+        pass
