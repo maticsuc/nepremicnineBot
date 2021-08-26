@@ -4,7 +4,7 @@ import time, json
 
 URL = "https://www.nepremicnine.net/oglasi-oddaja/ljubljana-mesto/stanovanje/"
 
-json_file = "data/number_of_appartments.json"
+json_file = "./data/number_of_appartments.json"
 
 interval = 60
 

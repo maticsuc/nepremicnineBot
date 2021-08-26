@@ -1,12 +1,12 @@
 [Unit]
-Description=Number of appartments bot
+Description=Running Bot service for storing number of appartments
 After=multi-user.target
-Conflicts=getty@tty1.service
 
 [Service]
+WorkingDirectory=/home/user/nepremicnineBot
 Type=simple
-ExecStart=/usr/bin/python3 /home/user/nepremicnineBot/runningBot.py
-StandardInput=tty-force
+Restart=always
+ExecStart=/usr/bin/python /home/user/nepremicnineBot/runningBot.py
 
 [Install]
 WantedBy=multi-user.target
